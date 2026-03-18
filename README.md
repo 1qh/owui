@@ -46,6 +46,71 @@ Zero residuals across all source files after rebranding.
 | `HOST_PORT` | `3000` | Port exposed on host |
 | `INSTALL_DIR` | `./owui-server` | Native only — where to install |
 
+Native mode supports `OWUI_TORCH_FLAVOR=auto|cuda|cpu` (default `auto`).
+Use `OWUI_TORCH_FLAVOR=cpu` to avoid CUDA wheel installs on low-disk or CPU-only environments.
+
+Both modes support `OWUI_BACKEND_PROFILE=full|light` (default `full`).
+Use `OWUI_BACKEND_PROFILE=light` to skip local heavy torch/CUDA installs and rely on external Ollama.
+
+No-auth mode is always enabled (`WEBUI_AUTH=False`).
+The scripts also seed an internal admin record (`WEBUI_ADMIN_*`) to avoid first-run onboarding prompts while staying no-auth.
+
+### External Ollama (no bundled heavy backend)
+
+This project is designed to use Ollama running outside WebUI.
+
+#### 1) Start local Ollama first
+
+Make sure Ollama is running and has at least one model:
+
+```bash
+ollama serve
+ollama pull qwen3.5
+curl http://127.0.0.1:11434/api/tags
+```
+
+Expected: JSON output with your model list.
+
+#### 2) Run WebUI in light backend mode
+
+Native:
+
+```bash
+OWUI_BACKEND_PROFILE=light OLLAMA_BASE_URL=http://127.0.0.1:11434 ./run-native.sh
+```
+
+Docker (container uses host Ollama):
+
+```bash
+OWUI_BACKEND_PROFILE=light OWUI_DOCKER_CUDA=off OLLAMA_BASE_URL=http://host.docker.internal:11434 ./run-docker.sh
+```
+
+Notes:
+
+- `OWUI_BACKEND_PROFILE=light` skips local heavy torch/CUDA setup inside WebUI.
+- Native still builds frontend once (required for a clean fresh run).
+- Docker uses `host.docker.internal` so the container can reach host Ollama.
+
+#### 3) Verify no-auth + Ollama wiring
+
+```bash
+curl http://localhost:3000/health
+curl http://localhost:3000/api/config
+curl http://127.0.0.1:11434/api/tags
+```
+
+Expected:
+
+- `/health` returns `{"status":true}`
+- `/api/config` includes `"features":{"auth":false,...}`
+- local Ollama `/api/tags` lists your models
+
+#### 4) Common issues
+
+- `Not authenticated` on model APIs: this can happen on endpoints that still require a session token even when global auth is off. UI chat remains no-auth.
+- WebUI cannot reach Ollama in Docker: use `OLLAMA_BASE_URL=http://host.docker.internal:11434` and ensure host Ollama is listening.
+- Native startup too heavy: keep `OWUI_BACKEND_PROFILE=light` and `OWUI_TORCH_FLAVOR=cpu`.
+
 ### Pin a specific upstream version
 
 ```bash

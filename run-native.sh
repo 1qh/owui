@@ -19,6 +19,18 @@ for cmd in python3 git bun uv; do
     command -v "$cmd" >/dev/null 2>&1 || { echo "  ✗ Missing: $cmd"; exit 1; }
 done
 
+TORCH_FLAVOR="${OWUI_TORCH_FLAVOR:-auto}"
+if [[ "$TORCH_FLAVOR" != "auto" && "$TORCH_FLAVOR" != "cuda" && "$TORCH_FLAVOR" != "cpu" ]]; then
+    echo "  ✗ Invalid OWUI_TORCH_FLAVOR='$TORCH_FLAVOR' (expected: auto|cuda|cpu)"
+    exit 1
+fi
+
+BACKEND_PROFILE="${OWUI_BACKEND_PROFILE:-full}"
+if [[ "$BACKEND_PROFILE" != "full" && "$BACKEND_PROFILE" != "light" ]]; then
+    echo "  ✗ Invalid OWUI_BACKEND_PROFILE='$BACKEND_PROFILE' (expected: full|light)"
+    exit 1
+fi
+
 if ! python3 - <<'PY'
 import sys
 ok = (sys.version_info.major, sys.version_info.minor) >= (3, 11) and (sys.version_info.major, sys.version_info.minor) < (3, 13)
@@ -42,26 +54,48 @@ cd "$SRC_DIR"
 MODULE=$(echo "${BRAND_NAME}" | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | tr '-' '_')
 
 echo "▸ Installing frontend dependencies..."
-bun install 2>&1 | tail -1
+bun install
 
 echo "▸ Building frontend..."
-bun run build 2>&1 | tail -1
+bun run build
 
 echo "▸ Installing backend dependencies..."
 cd backend
 uv venv .venv --python ">=3.11,<3.13" --python-preference only-system
 source .venv/bin/activate
 
-if nvidia-smi >/dev/null 2>&1; then
-    echo "▸ Installing CUDA PyTorch..."
-    uv pip install 'torch<=2.9.1' torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128 2>&1 | tail -1
+if [[ "$TORCH_FLAVOR" == "cpu" ]]; then
+    if [[ "$BACKEND_PROFILE" == "light" ]]; then
+        echo "▸ Skipping PyTorch install (OWUI_BACKEND_PROFILE=light)..."
+    else
+        echo "▸ Installing CPU PyTorch (forced by OWUI_TORCH_FLAVOR=cpu)..."
+        uv pip install 'torch<=2.9.1' torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+    fi
+elif [[ "$TORCH_FLAVOR" == "cuda" ]]; then
+    if [[ "$BACKEND_PROFILE" == "light" ]]; then
+        echo "▸ Skipping PyTorch install (OWUI_BACKEND_PROFILE=light)..."
+    else
+        echo "▸ Installing CUDA PyTorch (forced by OWUI_TORCH_FLAVOR=cuda)..."
+        uv pip install 'torch<=2.9.1' torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+    fi
+elif nvidia-smi >/dev/null 2>&1; then
+    if [[ "$BACKEND_PROFILE" == "light" ]]; then
+        echo "▸ Skipping PyTorch install (OWUI_BACKEND_PROFILE=light)..."
+    else
+        echo "▸ Installing CUDA PyTorch..."
+        uv pip install 'torch<=2.9.1' torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+    fi
 else
-    echo "▸ Installing CPU PyTorch..."
-    uv pip install 'torch<=2.9.1' torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu 2>&1 | tail -1
+    if [[ "$BACKEND_PROFILE" == "light" ]]; then
+        echo "▸ Skipping PyTorch install (OWUI_BACKEND_PROFILE=light)..."
+    else
+        echo "▸ Installing CPU PyTorch..."
+        uv pip install 'torch<=2.9.1' torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+    fi
 fi
 
 echo "▸ Installing requirements..."
-uv pip install -r requirements.txt 2>&1 | tail -1
+uv pip install -r requirements.txt
 
 echo "▸ Starting ${BRAND_NAME} on port ${HOST_PORT}..."
 echo "  PID file: ${SRC_DIR}/backend/.pid"
@@ -69,10 +103,18 @@ echo ""
 
 export PORT="${HOST_PORT}"
 export WEBUI_AUTH="False"
+export WEBUI_ADMIN_EMAIL="${WEBUI_ADMIN_EMAIL:-admin@local.invalid}"
+export WEBUI_ADMIN_PASSWORD="${WEBUI_ADMIN_PASSWORD:-ChangeMe_12345!}"
+export WEBUI_ADMIN_NAME="${WEBUI_ADMIN_NAME:-Admin}"
 export DEFAULT_USER_ROLE="admin"
 export ENABLE_COMMUNITY_SHARING="False"
 export ENABLE_MESSAGE_RATING="False"
 export OLLAMA_BASE_URL="${OLLAMA_BASE_URL:-http://localhost:11434}"
+export DATA_DIR="${SRC_DIR}/backend/data"
+mkdir -p "${DATA_DIR}"
+if [[ "$BACKEND_PROFILE" == "light" ]]; then
+    export RAG_EMBEDDING_ENGINE="${RAG_EMBEDDING_ENGINE:-ollama}"
+fi
 
 python -m uvicorn "${MODULE}.main:app" \
     --host 0.0.0.0 \

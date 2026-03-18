@@ -64,7 +64,9 @@ rm -rf \
     contribution_stats.py confirm_remove.sh \
     i18next-parser.config.ts cypress.config.ts \
     Makefile .env.example \
+    hatch_build.py \
     run-compose.sh run-ollama-docker.sh run.sh update_ollama_models.sh \
+    docker-compose.yaml docker-compose.gpu.yaml \
     docker-compose.a1111-test.yaml docker-compose.amdgpu.yaml \
     docker-compose.api.yaml docker-compose.data.yaml \
     docker-compose.otel.yaml docker-compose.playwright.yaml \
