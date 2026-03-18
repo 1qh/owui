@@ -31,6 +31,12 @@ if [[ "$BACKEND_PROFILE" != "full" && "$BACKEND_PROFILE" != "light" ]]; then
     exit 1
 fi
 
+INCLUDE_MARIADB="${OWUI_INCLUDE_MARIADB:-0}"
+if [[ "$INCLUDE_MARIADB" != "0" && "$INCLUDE_MARIADB" != "1" ]]; then
+    echo "  ✗ Invalid OWUI_INCLUDE_MARIADB='$INCLUDE_MARIADB' (expected: 0|1)"
+    exit 1
+fi
+
 if ! python3 - <<'PY'
 import sys
 ok = (sys.version_info.major, sys.version_info.minor) >= (3, 11) and (sys.version_info.major, sys.version_info.minor) < (3, 13)
@@ -95,7 +101,22 @@ else
 fi
 
 echo "▸ Installing requirements..."
-uv pip install -r requirements.txt
+REQ_FILE="requirements.txt"
+if [[ "$INCLUDE_MARIADB" == "0" ]]; then
+    python3 - <<'PY'
+from pathlib import Path
+
+src = Path("requirements.txt")
+dst = Path("requirements.owui.txt")
+lines = src.read_text(encoding="utf-8").splitlines()
+filtered = [line for line in lines if not line.strip().startswith("mariadb==")]
+dst.write_text("\n".join(filtered) + "\n", encoding="utf-8")
+PY
+    REQ_FILE="requirements.owui.txt"
+    echo "  ✓ Skipping mariadb Python package (OWUI_INCLUDE_MARIADB=0)"
+fi
+
+uv pip install -r "$REQ_FILE"
 
 echo "▸ Starting ${BRAND_NAME} on port ${HOST_PORT}..."
 echo "  PID file: ${SRC_DIR}/backend/.pid"

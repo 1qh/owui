@@ -52,6 +52,10 @@ Use `OWUI_TORCH_FLAVOR=cpu` to avoid CUDA wheel installs on low-disk or CPU-only
 Both modes support `OWUI_BACKEND_PROFILE=full|light` (default `full`).
 Use `OWUI_BACKEND_PROFILE=light` to skip local heavy torch/CUDA installs and rely on external Ollama.
 
+Native mode defaults to `OWUI_INCLUDE_MARIADB=0`, which skips the optional `mariadb` Python package to avoid
+`mariadb_config not found` build failures on machines without MariaDB Connector/C.
+Set `OWUI_INCLUDE_MARIADB=1` only if you explicitly need MariaDB Python support.
+
 No-auth mode is always enabled (`WEBUI_AUTH=False`).
 The scripts also seed an internal admin record (`WEBUI_ADMIN_*`) to avoid first-run onboarding prompts while staying no-auth.
 
@@ -110,6 +114,7 @@ Expected:
 - `Not authenticated` on model APIs: this can happen on endpoints that still require a session token even when global auth is off. UI chat remains no-auth.
 - WebUI cannot reach Ollama in Docker: use `OLLAMA_BASE_URL=http://host.docker.internal:11434` and ensure host Ollama is listening.
 - Native startup too heavy: keep `OWUI_BACKEND_PROFILE=light` and `OWUI_TORCH_FLAVOR=cpu`.
+- Native install fails with `mariadb_config not found`: leave `OWUI_INCLUDE_MARIADB=0` (default), or install MariaDB Connector/C and set `OWUI_INCLUDE_MARIADB=1`.
 
 ### Pin a specific upstream version
 
