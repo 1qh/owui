@@ -52,6 +52,12 @@ Zero residuals across all source files after rebranding.
 OWUI_TAG=v0.8.8 ./run-docker.sh "Chat" 3000
 ```
 
+### Default upstream selection behavior
+
+- If `OWUI_TAG` is not set, `setup.sh` selects the newest upstream tag.
+- If that upstream snapshot contains `ddgs==9.11.2`, setup patches it to `ddgs==9.10.0` automatically for install compatibility.
+- If tag lookup fails, fallback is `v0.8.8` (override with `OWUI_SAFE_TAG`).
+
 ## Prerequisites
 
 ### Docker path
@@ -61,7 +67,7 @@ OWUI_TAG=v0.8.8 ./run-docker.sh "Chat" 3000
 
 ### Native path
 
-- `git`, `python3`
+- `git`, `python3` (`>=3.11,<3.13`; Python 3.12 recommended)
 - [`bun`](https://bun.sh) — frontend build
 - [`uv`](https://github.com/astral-sh/uv) — Python package management
 
