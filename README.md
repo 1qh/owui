@@ -116,6 +116,31 @@ Expected:
 - Native startup too heavy: keep `OWUI_BACKEND_PROFILE=light` and `OWUI_TORCH_FLAVOR=cpu`.
 - Native install fails with `mariadb_config not found`: leave `OWUI_INCLUDE_MARIADB=0` (default), or install MariaDB Connector/C and set `OWUI_INCLUDE_MARIADB=1`.
 
+If you want MariaDB support (`OWUI_INCLUDE_MARIADB=1`), install Connector/C first so `mariadb_config` exists:
+
+```bash
+# Ubuntu / Debian
+sudo apt-get update && sudo apt-get install -y libmariadb-dev
+
+# Fedora / RHEL / Rocky / AlmaLinux
+sudo dnf install -y mariadb-connector-c-devel
+
+# Arch Linux
+sudo pacman -S --needed mariadb-libs
+
+# Alpine
+sudo apk add mariadb-connector-c-dev
+
+# macOS (Homebrew)
+brew install mariadb-connector-c
+```
+
+Then run native with MariaDB package enabled:
+
+```bash
+OWUI_INCLUDE_MARIADB=1 ./run-native.sh
+```
+
 ### Pin a specific upstream version
 
 ```bash
