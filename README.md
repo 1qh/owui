@@ -1,79 +1,75 @@
 # owui
 
-White-label [Open WebUI](https://github.com/open-webui/open-webui) for private enterprise deployment. One script gives you a fully functional chat platform with no visible Open WebUI branding, running on NVIDIA GPUs with no authentication required.
+White-label [Open WebUI](https://github.com/open-webui/open-webui) for private enterprise deployment. One script gives you a fully functional chat platform with zero visible Open WebUI branding.
 
 ## Quick Start
 
+### Docker (recommended)
+
 ```bash
 git clone https://github.com/1qh/owui.git && cd owui
-./deploy-chat.sh "Acme AI" 3000
+./run-docker.sh
 ```
 
-That's it. Open `http://localhost:3000`.
+### Native (no Docker needed)
 
-## What It Does
+```bash
+git clone https://github.com/1qh/owui.git && cd owui
+./run-native.sh
+```
 
-`deploy-chat.sh` runs end-to-end:
-
-1. Clones the latest stable Open WebUI release
-2. Strips all branding via `rebrand.py` — names, logos, favicons, social links, community features, attribution, license checks, easter eggs, sponsor links
-3. Builds a Docker image with CUDA support
-4. Starts the container with GPU passthrough, no-auth mode
+Open `http://localhost:3000`.
 
 ## What Gets Removed
 
-- All `Open WebUI` / `OpenWebUI` text (frontend, backend, i18n — 59 locales)
-- Logos, favicons, splash screens (replaced with neutral chat bubble icon)
+- All `Open WebUI` / `OpenWebUI` text across frontend, backend, and 59 i18n locales
+- Logos, favicons, splash screens — replaced with a neutral chat bubble icon
 - Discord, Twitter, GitHub social links and shield.io badges
 - "Share to Community" button and `openwebui.com` redirects
-- About page attribution (copyright, "Created by")
-- Enterprise nag / sponsor prompts
+- About page attribution, copyright, "Created by", sponsor links
 - License validation (`api.openwebui.com` phone-home)
-- `CUSTOM_NAME` remote branding fetch
-- `X-OpenWebUI-*` HTTP headers renamed
-- User-Agent strings scrubbed
-- Python module renamed (`open_webui` → brand slug)
+- `CUSTOM_NAME` remote branding, enterprise nag
+- HTTP headers, user-agent strings, Python module name
 
 Zero residuals across all source files after rebranding.
 
 ## Usage
 
-```bash
-./deploy-chat.sh [BRAND_NAME] [HOST_PORT]
+```
+./run-docker.sh [BRAND_NAME] [HOST_PORT]
+./run-native.sh [BRAND_NAME] [HOST_PORT] [INSTALL_DIR]
 ```
 
 | Arg | Default | Description |
 |-----|---------|-------------|
-| `BRAND_NAME` | `Chat` | Your platform name |
+| `BRAND_NAME` | `Chat` | Platform name shown in UI |
 | `HOST_PORT` | `3000` | Port exposed on host |
+| `INSTALL_DIR` | `./owui-server` | Native only — where to install |
 
-### Pin a specific version
-
-```bash
-OWUI_TAG=v0.8.8 ./deploy-chat.sh "Chat" 3000
-```
-
-### Use OpenAI-compatible API instead of Ollama
+### Pin a specific upstream version
 
 ```bash
-docker rm -f private-chat
-docker run -d --name private-chat --gpus all \
-  -p 3000:8080 -v private-chat-data:/app/backend/data \
-  -e WEBUI_AUTH=False -e DEFAULT_USER_ROLE=admin \
-  -e OPENAI_API_BASE_URL=https://api.example.com/v1 \
-  -e OPENAI_API_KEY=sk-your-key \
-  --restart unless-stopped private-chat:latest
+OWUI_TAG=v0.8.8 ./run-docker.sh "Chat" 3000
 ```
 
 ## Prerequisites
 
-- Docker with [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html)
-- NVIDIA GPU with drivers
+### Docker path
+
+- Docker (with [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) for GPU)
 - `git`, `python3`
+
+### Native path
+
+- `git`, `python3`
+- [`bun`](https://bun.sh) — frontend build
+- [`uv`](https://github.com/astral-sh/uv) — Python package management
 
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `deploy-chat.sh` | Orchestrator — clone, strip, rebrand, build, deploy |
-| `rebrand.py` | All rebranding logic — string replacement, regex patches, asset generation, module rename |
+| `setup.sh` | Shared setup — clone, strip, rebrand |
+| `run-docker.sh` | Docker path — build image, run container |
+| `run-native.sh` | Native path — bun build, uv pip install, uvicorn |
+| `rebrand.py` | All rebranding logic — 8 phases, 50+ patches, asset generation |
