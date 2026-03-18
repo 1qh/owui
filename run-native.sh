@@ -32,7 +32,7 @@ bun run build 2>&1 | tail -1
 
 echo "▸ Installing backend dependencies..."
 cd backend
-uv venv .venv --python 3.11
+uv venv .venv --python "$(command -v python3)"
 source .venv/bin/activate
 
 if nvidia-smi >/dev/null 2>&1; then
