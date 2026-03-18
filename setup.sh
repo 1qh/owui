@@ -44,11 +44,12 @@ echo "  ✓ Cloned ${TAG} ($(git log -1 --format='%h %cs'))" >&2
 if [[ -f backend/requirements.txt ]] && grep -q '^ddgs==9\.11\.2$' backend/requirements.txt; then
     python3 - <<'PY'
 from pathlib import Path
+import sys
 
 req = Path("backend/requirements.txt")
 text = req.read_text(encoding="utf-8")
 req.write_text(text.replace("ddgs==9.11.2", "ddgs==9.10.0"), encoding="utf-8")
-print("  ✓ Patched backend/requirements.txt: ddgs==9.11.2 -> ddgs==9.10.0")
+sys.stderr.write("  ✓ Patched backend/requirements.txt: ddgs==9.11.2 -> ddgs==9.10.0\n")
 PY
 fi
 
