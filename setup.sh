@@ -2,7 +2,7 @@
 #
 # setup.sh — Clone, strip, and rebrand Open WebUI
 #
-# Called by run-docker.sh and run-native.sh
+# Called by run-native.sh
 # Outputs the rebranded source directory path to stdout (last line)
 #
 
@@ -53,10 +53,10 @@ sys.stderr.write("  ✓ Patched backend/requirements.txt: ddgs==9.11.2 -> ddgs==
 PY
 fi
 
-# ── Strip non-essential files (keep CHANGELOG.md — Dockerfile COPYs it) ───────
 echo "▸ Stripping non-essential files..." >&2
 rm -rf \
     .git .github .gitignore .gitattributes \
+    Dockerfile \
     docs cypress test \
     demo.png banner.png \
     README.md TROUBLESHOOTING.md \
