@@ -89,6 +89,111 @@ Docker (container uses host Ollama):
 OWUI_BACKEND_PROFILE=light OWUI_DOCKER_CUDA=off OLLAMA_BASE_URL=http://host.docker.internal:11434 ./run-docker.sh
 ```
 
+#### 2.1) Configure embedding model explicitly (recommended for Ollama users)
+
+Chat model and embedding model are different. A chat-only model can work for chatting but fail during
+knowledge file indexing.
+
+Recommended local Ollama setup:
+
+```bash
+# Chat model
+ollama pull qwen3.5
+
+# Embedding model
+ollama pull nomic-embed-text
+```
+
+Run with explicit embedding config:
+
+```bash
+RAG_EMBEDDING_ENGINE=ollama \
+RAG_EMBEDDING_MODEL=nomic-embed-text \
+RAG_OLLAMA_BASE_URL=http://127.0.0.1:11434 \
+OWUI_BACKEND_PROFILE=light \
+OLLAMA_BASE_URL=http://127.0.0.1:11434 \
+./run-native.sh
+```
+
+Docker variant:
+
+```bash
+RAG_EMBEDDING_ENGINE=ollama \
+RAG_EMBEDDING_MODEL=nomic-embed-text \
+RAG_OLLAMA_BASE_URL=http://host.docker.internal:11434 \
+OWUI_BACKEND_PROFILE=light \
+OWUI_DOCKER_CUDA=off \
+OLLAMA_BASE_URL=http://host.docker.internal:11434 \
+./run-docker.sh
+```
+
+#### 2.2) Known-good command examples
+
+Native + local Ollama + explicit embedding model:
+
+```bash
+RAG_EMBEDDING_ENGINE=ollama \
+RAG_EMBEDDING_MODEL=nomic-embed-text \
+RAG_OLLAMA_BASE_URL=http://127.0.0.1:11434 \
+OWUI_BACKEND_PROFILE=light \
+OWUI_TORCH_FLAVOR=cpu \
+OLLAMA_BASE_URL=http://127.0.0.1:11434 \
+./run-native.sh DX2 3001
+```
+
+Native + default upstream embedding engine (no forced Ollama embedding):
+
+```bash
+OWUI_BACKEND_PROFILE=light \
+OWUI_TORCH_FLAVOR=cpu \
+OLLAMA_BASE_URL=http://127.0.0.1:11434 \
+./run-native.sh Chat 3000
+```
+
+Native + remote Ollama host (same LAN/VPN):
+
+```bash
+RAG_EMBEDDING_ENGINE=ollama \
+RAG_EMBEDDING_MODEL=nomic-embed-text \
+RAG_OLLAMA_BASE_URL=http://10.0.0.25:11434 \
+OWUI_BACKEND_PROFILE=light \
+OLLAMA_BASE_URL=http://10.0.0.25:11434 \
+./run-native.sh Chat 3000
+```
+
+Docker + host Ollama + explicit embedding model:
+
+```bash
+RAG_EMBEDDING_ENGINE=ollama \
+RAG_EMBEDDING_MODEL=nomic-embed-text \
+RAG_OLLAMA_BASE_URL=http://host.docker.internal:11434 \
+OWUI_BACKEND_PROFILE=light \
+OWUI_DOCKER_CUDA=off \
+OLLAMA_BASE_URL=http://host.docker.internal:11434 \
+./run-docker.sh Chat 3000
+```
+
+Docker + remote Ollama host:
+
+```bash
+RAG_EMBEDDING_ENGINE=ollama \
+RAG_EMBEDDING_MODEL=nomic-embed-text \
+RAG_OLLAMA_BASE_URL=http://10.0.0.25:11434 \
+OWUI_BACKEND_PROFILE=light \
+OWUI_DOCKER_CUDA=off \
+OLLAMA_BASE_URL=http://10.0.0.25:11434 \
+./run-docker.sh Chat 3000
+```
+
+Native + optional MariaDB Python support enabled (only if needed):
+
+```bash
+OWUI_INCLUDE_MARIADB=1 \
+OWUI_BACKEND_PROFILE=light \
+OLLAMA_BASE_URL=http://127.0.0.1:11434 \
+./run-native.sh Chat 3000
+```
+
 Notes:
 
 - `OWUI_BACKEND_PROFILE=light` skips local heavy torch/CUDA setup inside WebUI.
@@ -110,6 +215,14 @@ Expected:
 - `/api/config` includes `"features":{"auth":false,...}`
 - local Ollama `/api/tags` lists your models
 
+Optional embedding check:
+
+```bash
+curl -sS http://127.0.0.1:11434/api/tags | grep -E "qwen3.5|nomic-embed-text"
+```
+
+Expected: both chat and embedding models are present.
+
 #### 4) Common issues
 
 - `Not authenticated` on model APIs: this can happen on endpoints that still require a session token even when global auth is off. UI chat remains no-auth.
@@ -117,6 +230,7 @@ Expected:
 - Native startup too heavy: keep `OWUI_BACKEND_PROFILE=light` and `OWUI_TORCH_FLAVOR=cpu`.
 - Native install fails with `mariadb_config not found`: leave `OWUI_INCLUDE_MARIADB=0` (default), or install MariaDB Connector/C and set `OWUI_INCLUDE_MARIADB=1`.
 - If you explicitly use `RAG_EMBEDDING_ENGINE=ollama`, ensure an embedding-capable Ollama model is configured; chat-only models can cause empty embedding results during knowledge indexing.
+- Collection upload fails during indexing: set `RAG_EMBEDDING_ENGINE=ollama` + `RAG_EMBEDDING_MODEL=nomic-embed-text` explicitly and confirm that model exists in `ollama /api/tags`.
 
 If you want MariaDB support (`OWUI_INCLUDE_MARIADB=1`), install Connector/C first so `mariadb_config` exists:
 
