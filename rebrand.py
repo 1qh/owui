@@ -62,7 +62,9 @@ def patch(path: str, replacements: list[tuple[str, str]]):
     write(path, content)
 
 
-def patch_re(path: str, pattern: str, replacement: str, label: str = "", count: int = 0):
+def patch_re(
+    path: str, pattern: str, replacement: str, label: str = "", count: int = 0
+):
     """Apply regex replacement (DOTALL) to a file."""
     global _ok, _miss
     if not os.path.isfile(path):
@@ -92,9 +94,14 @@ def apply_re(content: str, pattern: str, replacement: str, label: str) -> str:
 
 def create_png(width: int, height: int, rgba: tuple = (0, 0, 0, 0)) -> bytes:
     """Create a minimal valid PNG with a solid RGBA color (stdlib only)."""
+
     def chunk(ctype, data):
         c = ctype + data
-        return struct.pack(">I", len(data)) + c + struct.pack(">I", zlib.crc32(c) & 0xFFFFFFFF)
+        return (
+            struct.pack(">I", len(data))
+            + c
+            + struct.pack(">I", zlib.crc32(c) & 0xFFFFFFFF)
+        )
 
     ihdr = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
     row = struct.pack("BBBB", *rgba) * width
@@ -116,7 +123,12 @@ def create_ico(size: int = 16, rgba: tuple = (23, 23, 23, 255)) -> bytes:
         "<BBBBHHII",
         size if size < 256 else 0,
         size if size < 256 else 0,
-        0, 0, 1, 32, len(png), 22,
+        0,
+        0,
+        1,
+        32,
+        len(png),
+        22,
     )
     return header + entry + png
 
@@ -128,12 +140,19 @@ def create_ico(size: int = 16, rgba: tuple = (23, 23, 23, 255)) -> bytes:
 print("\n[1/6] Backend configuration")
 
 # env.py — default name, remove "(Open WebUI)" suffix, local favicon
-patch("backend/open_webui/env.py", [
-    ('WEBUI_NAME = os.environ.get("WEBUI_NAME", "Open WebUI")',
-     'WEBUI_NAME = os.environ.get("WEBUI_NAME", "' + BRAND + '")'),
-    ('WEBUI_FAVICON_URL = "https://openwebui.com/favicon.png"',
-     'WEBUI_FAVICON_URL = "/static/favicon.png"'),
-])
+patch(
+    "backend/open_webui/env.py",
+    [
+        (
+            'WEBUI_NAME = os.environ.get("WEBUI_NAME", "Open WebUI")',
+            'WEBUI_NAME = os.environ.get("WEBUI_NAME", "' + BRAND + '")',
+        ),
+        (
+            'WEBUI_FAVICON_URL = "https://openwebui.com/favicon.png"',
+            'WEBUI_FAVICON_URL = "/static/favicon.png"',
+        ),
+    ],
+)
 patch_re(
     "backend/open_webui/env.py",
     r'if WEBUI_NAME != "Open WebUI":\n\s+WEBUI_NAME \+= " \(Open WebUI\)"\n',
@@ -151,9 +170,12 @@ patch_re(
 )
 
 # main.py — FastAPI title + nuke license call
-patch("backend/open_webui/main.py", [
-    ('title="Open WebUI"', 'title="' + BRAND + '"'),
-])
+patch(
+    "backend/open_webui/main.py",
+    [
+        ('title="Open WebUI"', 'title="' + BRAND + '"'),
+    ],
+)
 patch_re(
     "backend/open_webui/main.py",
     r"if LICENSE_KEY:\s*\n\s+get_license_data\(app, LICENSE_KEY\)",
@@ -170,16 +192,33 @@ patch_re(
     count=1,
 )
 
+patch_re(
+    "backend/open_webui/routers/retrieval.py",
+    r"if result\.metadatas and result\.metadatas\[0\]:\n\s+existing_file_id = result\.metadatas\[0\]\[0\]\.get\(\"file_id\"\)",
+    (
+        "if result.metadatas and result.metadatas[0] and len(result.metadatas[0]) > 0:\n"
+        '                    existing_file_id = result.metadatas[0][0].get("file_id")'
+    ),
+    label="retrieval.py — avoid IndexError on empty metadata rows",
+    count=1,
+)
+
 # pyproject.toml
-patch("pyproject.toml", [
-    ('description = "Open WebUI"', 'description = "' + BRAND + '"'),
-    ('email = "tim@openwebui.com"', 'email = ""'),
-])
+patch(
+    "pyproject.toml",
+    [
+        ('description = "Open WebUI"', 'description = "' + BRAND + '"'),
+        ('email = "tim@openwebui.com"', 'email = ""'),
+    ],
+)
 
 # hatch_build.py
-patch("hatch_build.py", [
-    ("Building Open Webui frontend", "Building " + BRAND + " frontend"),
-])
+patch(
+    "hatch_build.py",
+    [
+        ("Building Open Webui frontend", "Building " + BRAND + " frontend"),
+    ],
+)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -188,13 +227,22 @@ patch("hatch_build.py", [
 
 print("\n[2/6] Frontend configuration")
 
-patch("src/lib/constants.ts", [
-    ("export const APP_NAME = 'Open WebUI'", "export const APP_NAME = '" + BRAND + "'"),
-])
+patch(
+    "src/lib/constants.ts",
+    [
+        (
+            "export const APP_NAME = 'Open WebUI'",
+            "export const APP_NAME = '" + BRAND + "'",
+        ),
+    ],
+)
 
-patch("src/app.html", [
-    ("<title>Open WebUI</title>", "<title>" + BRAND + "</title>"),
-])
+patch(
+    "src/app.html",
+    [
+        ("<title>Open WebUI</title>", "<title>" + BRAND + "</title>"),
+    ],
+)
 
 patch("static/opensearch.xml", [("Open WebUI", BRAND)])
 patch("static/static/site.webmanifest", [("Open WebUI", BRAND)])
@@ -295,39 +343,54 @@ if os.path.isfile(sharechat):
 
 
 # ── error/+page.svelte ────────────────────────────────────────────────────────
-patch("src/routes/error/+page.svelte", [
-    ("https://github.com/open-webui/open-webui#how-to-install-", "#"),
-    ("https://discord.gg/5rJgQTnV4s", "#"),
-    ("join our Discord for help.", "check your server configuration."),
-    ("See readme.md for instructions", "Check server status"),
-])
+patch(
+    "src/routes/error/+page.svelte",
+    [
+        ("https://github.com/open-webui/open-webui#how-to-install-", "#"),
+        ("https://discord.gg/5rJgQTnV4s", "#"),
+        ("join our Discord for help.", "check your server configuration."),
+        ("See readme.md for instructions", "Check server status"),
+    ],
+)
 
 # ── UpdateInfoToast.svelte ────────────────────────────────────────────────────
-patch("src/lib/components/layout/UpdateInfoToast.svelte", [
-    ("https://github.com/open-webui/open-webui/releases", "#"),
-])
+patch(
+    "src/lib/components/layout/UpdateInfoToast.svelte",
+    [
+        ("https://github.com/open-webui/open-webui/releases", "#"),
+    ],
+)
 
 # ── SettingsModal.svelte — easter egg search terms ────────────────────────────
-patch("src/lib/components/chat/SettingsModal.svelte", [
-    ("'about open webui'", "'about'"),
-    ("'aboutopenwebui'", "'about'"),
-    ("'timothy jae ryang baek'", "''"),
-    ("'timothy j baek'", "''"),
-    ("'timothyjaeryangbaek'", "''"),
-    ("'timothyjbaek'", "''"),
-])
+patch(
+    "src/lib/components/chat/SettingsModal.svelte",
+    [
+        ("'about open webui'", "'about'"),
+        ("'aboutopenwebui'", "'about'"),
+        ("'timothy jae ryang baek'", "''"),
+        ("'timothy j baek'", "''"),
+        ("'timothyjaeryangbaek'", "''"),
+        ("'timothyjbaek'", "''"),
+    ],
+)
 
 # ── FunctionEditor.svelte — default template metadata ─────────────────────────
-patch("src/lib/components/admin/Functions/FunctionEditor.svelte", [
-    ("author: open-webui", "author: admin"),
-    ("author_url: https://github.com/open-webui", "author_url: "),
-    ("funding_url: https://github.com/open-webui", "funding_url: "),
-])
+patch(
+    "src/lib/components/admin/Functions/FunctionEditor.svelte",
+    [
+        ("author: open-webui", "author: admin"),
+        ("author_url: https://github.com/open-webui", "author_url: "),
+        ("funding_url: https://github.com/open-webui", "funding_url: "),
+    ],
+)
 
 # ── SyncStatsModal.svelte — export filename ───────────────────────────────────
-patch("src/lib/components/chat/Settings/SyncStatsModal.svelte", [
-    ("open-webui-stats-", "stats-"),
-])
+patch(
+    "src/lib/components/chat/Settings/SyncStatsModal.svelte",
+    [
+        ("open-webui-stats-", "stats-"),
+    ],
+)
 
 # ── UserList.svelte — remove entire enterprise/sponsor nag block ──────────────
 patch_re(
@@ -338,32 +401,46 @@ patch_re(
 )
 
 # ── hatch_build.py — second branding string ───────────────────────────────────
-patch("hatch_build.py", [
-    ("building Open Webui", "building " + BRAND),
-    ("for building Open Webui", "for building " + BRAND),
-])
+patch(
+    "hatch_build.py",
+    [
+        ("building Open Webui", "building " + BRAND),
+        ("for building Open Webui", "for building " + BRAND),
+    ],
+)
 
 # ── package.json — package name ───────────────────────────────────────────────
 SLUG = BRAND.lower().replace(" ", "-")
-patch("package.json", [
-    ('"name": "open-webui"', '"name": "' + SLUG + '"'),
-])
+patch(
+    "package.json",
+    [
+        ('"name": "open-webui"', '"name": "' + SLUG + '"'),
+    ],
+)
 
 # ── docker-compose.yaml — service/volume/container names ─────────────────────
 for dc in glob.glob("docker-compose*.yaml"):
-    patch(dc, [
-        ("container_name: open-webui", "container_name: " + SLUG),
-        ("- open-webui:/app/backend/data", "- " + SLUG + ":/app/backend/data"),
-        ("  open-webui: {}", "  " + SLUG + ": {}"),
-        ("image: ghcr.io/open-webui/open-webui:${WEBUI_DOCKER_TAG-main}",
-         "image: " + SLUG + ":latest"),
-        ("OTEL_SERVICE_NAME=open-webui", "OTEL_SERVICE_NAME=" + SLUG),
-    ])
+    patch(
+        dc,
+        [
+            ("container_name: open-webui", "container_name: " + SLUG),
+            ("- open-webui:/app/backend/data", "- " + SLUG + ":/app/backend/data"),
+            ("  open-webui: {}", "  " + SLUG + ": {}"),
+            (
+                "image: ghcr.io/open-webui/open-webui:${WEBUI_DOCKER_TAG-main}",
+                "image: " + SLUG + ":latest",
+            ),
+            ("OTEL_SERVICE_NAME=open-webui", "OTEL_SERVICE_NAME=" + SLUG),
+        ],
+    )
 
 # ── pyproject.toml — author name (keep package name, it's structural) ────────
-patch("pyproject.toml", [
-    ('name = "Timothy Jaeryang Baek"', 'name = ""'),
-])
+patch(
+    "pyproject.toml",
+    [
+        ('name = "Timothy Jaeryang Baek"', 'name = ""'),
+    ],
+)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -444,12 +521,18 @@ for filepath in sorted(glob.glob("backend/**/*.py", recursive=True)):
     content = content.replace("OpenWebUI-User-", SLUG + "-user-")
     content = content.replace("OpenWebUI-File-", SLUG + "-file-")
     content = content.replace("OpenWebUI-MistralLoader/2.0", SLUG + "/2.0")
-    content = content.replace("Removes OpenWebUI specific parameters", "Removes internal parameters")
-    content = content.replace("with OpenWebUI parameters removed", "with internal parameters removed")
+    content = content.replace(
+        "Removes OpenWebUI specific parameters", "Removes internal parameters"
+    )
+    content = content.replace(
+        "with OpenWebUI parameters removed", "with internal parameters removed"
+    )
     content = content.replace("available in OpenWebUI", "available")
     content = content.replace("for OpenWebUI tokens", "for tokens")
     content = content.replace("for an OpenWebUI JWT", "for a JWT")
-    content = content.replace("exchange OAuth tokens for OpenWebUI", "exchange OAuth tokens for local")
+    content = content.replace(
+        "exchange OAuth tokens for OpenWebUI", "exchange OAuth tokens for local"
+    )
 
     content = re.sub(
         r'"User-Agent":\s*"[^"]*open-webui/open-webui[^"]*"',
@@ -484,7 +567,7 @@ print("  i18n files patched:    " + str(i18n_count))
 
 print("\n[5/8] Generating neutral branding assets")
 
-DARK = (23, 23, 23, 255)       # #171717 — matches default dark theme
+DARK = (23, 23, 23, 255)  # #171717 — matches default dark theme
 LIGHT = (255, 255, 255, 255)
 TRANS = (0, 0, 0, 0)
 S = "static/static"
@@ -501,7 +584,7 @@ write(
     '  <circle cx="290" cy="265" r="18" fill="#171717" opacity="0.5"/>\n'
     "  <style>\n"
     "    @media(prefers-color-scheme:dark){"
-    'rect{fill:#fff}path{fill:#171717}circle{fill:#fff}}\n'
+    "rect{fill:#fff}path{fill:#171717}circle{fill:#fff}}\n"
     "  </style>\n"
     "</svg>\n",
 )
@@ -617,7 +700,9 @@ if MODULE != "open_webui" and os.path.isdir("backend/open_webui"):
         content = read(filepath)
         original = content
         content = content.replace("https://github.com/open-webui/open-webui", "#")
-        content = content.replace("https://api.github.com/repos/open-webui/open-webui", "#")
+        content = content.replace(
+            "https://api.github.com/repos/open-webui/open-webui", "#"
+        )
         content = content.replace("OPEN_WEBUI_", MODULE_UPPER + "_")
         content = content.replace("open_webui", MODULE)
         content = content.replace("open-webui", SLUG)
@@ -632,16 +717,22 @@ if MODULE != "open_webui" and os.path.isdir("backend/open_webui"):
             content = content.replace("open-webui", SLUG)
             write(filepath, content)
 
-    patch("pyproject.toml", [
-        ('name = "open-webui"', 'name = "' + SLUG + '"'),
-        ('open-webui = "open_webui:app"', SLUG + ' = "' + MODULE + ':app"'),
-        ('"open_webui/', '"' + MODULE + '/'),
-        ('= "open_webui/', '= "' + MODULE + '/'),
-    ])
+    patch(
+        "pyproject.toml",
+        [
+            ('name = "open-webui"', 'name = "' + SLUG + '"'),
+            ('open-webui = "open_webui:app"', SLUG + ' = "' + MODULE + ':app"'),
+            ('"open_webui/', '"' + MODULE + "/"),
+            ('= "open_webui/', '= "' + MODULE + "/"),
+        ],
+    )
 
-    patch("hatch_build.py", [
-        ("open_webui", MODULE),
-    ])
+    patch(
+        "hatch_build.py",
+        [
+            ("open_webui", MODULE),
+        ],
+    )
 
     for filepath in sorted(glob.glob("src/**/*.svelte", recursive=True)):
         content = read(filepath)
@@ -671,7 +762,9 @@ print("\n" + "=" * 50)
 print("Rebranding complete: " + repr(BRAND))
 print("  Patches applied: " + str(_ok))
 if _miss:
-    print("  Patterns missed:  " + str(_miss) + " (may be OK if handled by global sweep)")
+    print(
+        "  Patterns missed:  " + str(_miss) + " (may be OK if handled by global sweep)"
+    )
 else:
     print("  Patterns missed:  0")
 print("=" * 50)
