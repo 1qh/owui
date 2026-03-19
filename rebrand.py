@@ -203,6 +203,48 @@ patch_re(
     count=1,
 )
 
+patch_re(
+    "backend/open_webui/routers/retrieval.py",
+    (
+        r"embeddings = future\.result\(timeout=embedding_timeout\)\n"
+        r"\s+log\.info\(f\"embeddings generated \{len\(embeddings\)\} for \{len\(texts\)\} items\"\)\n\n"
+        r"\s+items = \[\n"
+        r"\s+\{\n"
+        r"\s+\"id\": str\(uuid\.uuid4\(\)\),\n"
+        r"\s+\"text\": text,\n"
+        r"\s+\"vector\": embeddings\[idx\],\n"
+        r"\s+\"metadata\": metadatas\[idx\],\n"
+        r"\s+\}\n"
+        r"\s+for idx, text in enumerate\(texts\)\n"
+        r"\s+\]"
+    ),
+    (
+        "embeddings = future.result(timeout=embedding_timeout)\n"
+        '        log.info(f"embeddings generated {len(embeddings)} for {len(texts)} items")\n\n'
+        "        if not embeddings:\n"
+        '            raise ValueError("Embedding engine returned no embeddings")\n\n'
+        "        if len(embeddings) != len(texts):\n"
+        "            min_count = min(len(embeddings), len(texts), len(metadatas))\n"
+        "            log.warning(\n"
+        '                f"Embedding count mismatch: embeddings={len(embeddings)} texts={len(texts)} metadatas={len(metadatas)}; truncating to {min_count}"\n'
+        "            )\n"
+        "            embeddings = embeddings[:min_count]\n"
+        "            texts = texts[:min_count]\n"
+        "            metadatas = metadatas[:min_count]\n\n"
+        "        items = [\n"
+        "            {\n"
+        '                "id": str(uuid.uuid4()),\n'
+        '                "text": text,\n'
+        '                "vector": embeddings[idx],\n'
+        '                "metadata": metadatas[idx],\n'
+        "            }\n"
+        "            for idx, text in enumerate(texts)\n"
+        "        ]"
+    ),
+    label="retrieval.py — guard embedding/text length mismatch",
+    count=1,
+)
+
 # pyproject.toml
 patch(
     "pyproject.toml",
