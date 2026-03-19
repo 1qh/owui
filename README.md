@@ -57,7 +57,7 @@ Native mode defaults to `OWUI_INCLUDE_MARIADB=0`, which skips the optional `mari
 Set `OWUI_INCLUDE_MARIADB=1` only if you explicitly need MariaDB Python support.
 
 No-auth mode is always enabled (`WEBUI_AUTH=False`).
-The scripts also seed an internal admin record (`WEBUI_ADMIN_*`) to avoid first-run onboarding prompts while staying no-auth.
+Native mode is clean-first: if the target install directory already exists, it is removed before setup.
 
 ### External Ollama (no bundled heavy backend)
 

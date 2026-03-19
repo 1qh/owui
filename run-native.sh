@@ -6,6 +6,11 @@ HOST_PORT="${2:-3000}"
 INSTALL_DIR="${3:-$(pwd)/owui-server}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+if [[ -d "$INSTALL_DIR" ]]; then
+    echo "▸ Resetting existing install directory for clean run..."
+    rm -rf "$INSTALL_DIR"
+fi
+
 echo ""
 echo "  ┌─────────────────────────────────────────────┐"
 echo "  │  Private Chat — Native                       │"
@@ -124,15 +129,13 @@ echo ""
 
 export PORT="${HOST_PORT}"
 export WEBUI_AUTH="False"
-export WEBUI_ADMIN_EMAIL="${WEBUI_ADMIN_EMAIL:-admin@local.invalid}"
-export WEBUI_ADMIN_PASSWORD="${WEBUI_ADMIN_PASSWORD:-ChangeMe_12345!}"
-export WEBUI_ADMIN_NAME="${WEBUI_ADMIN_NAME:-Admin}"
 export DEFAULT_USER_ROLE="admin"
 export ENABLE_COMMUNITY_SHARING="False"
 export ENABLE_MESSAGE_RATING="False"
 export OLLAMA_BASE_URL="${OLLAMA_BASE_URL:-http://localhost:11434}"
 export DATA_DIR="${SRC_DIR}/backend/data"
 mkdir -p "${DATA_DIR}"
+
 if [[ "$BACKEND_PROFILE" == "light" ]]; then
     export RAG_EMBEDDING_ENGINE="${RAG_EMBEDDING_ENGINE:-ollama}"
 fi

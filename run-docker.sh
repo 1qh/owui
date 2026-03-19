@@ -9,9 +9,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DOCKER_CUDA_MODE="${OWUI_DOCKER_CUDA:-auto}"
 BACKEND_PROFILE="${OWUI_BACKEND_PROFILE:-full}"
 OLLAMA_ENDPOINT="${OLLAMA_BASE_URL:-http://host.docker.internal:11434}"
-WEBUI_ADMIN_EMAIL_VALUE="${WEBUI_ADMIN_EMAIL:-admin@local.invalid}"
-WEBUI_ADMIN_PASSWORD_VALUE="${WEBUI_ADMIN_PASSWORD:-ChangeMe_12345!}"
-WEBUI_ADMIN_NAME_VALUE="${WEBUI_ADMIN_NAME:-Admin}"
 
 if [[ "$DOCKER_CUDA_MODE" != "auto" && "$DOCKER_CUDA_MODE" != "on" && "$DOCKER_CUDA_MODE" != "off" ]]; then
     echo "  ✗ Invalid OWUI_DOCKER_CUDA='$DOCKER_CUDA_MODE' (expected: auto|on|off)"
@@ -89,9 +86,6 @@ docker run -d \
     -p "${HOST_PORT}:8080" \
     -v "${CONTAINER_NAME}-data:/app/backend/data" \
     -e WEBUI_AUTH=False \
-    -e WEBUI_ADMIN_EMAIL=${WEBUI_ADMIN_EMAIL_VALUE} \
-    -e WEBUI_ADMIN_PASSWORD=${WEBUI_ADMIN_PASSWORD_VALUE} \
-    -e WEBUI_ADMIN_NAME=${WEBUI_ADMIN_NAME_VALUE} \
     -e DEFAULT_USER_ROLE=admin \
     -e ENABLE_COMMUNITY_SHARING=False \
     -e ENABLE_MESSAGE_RATING=False \
