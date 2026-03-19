@@ -94,6 +94,7 @@ Notes:
 - `OWUI_BACKEND_PROFILE=light` skips local heavy torch/CUDA setup inside WebUI.
 - Native still builds frontend once (required for a clean fresh run).
 - Docker uses `host.docker.internal` so the container can reach host Ollama.
+- Embedding engine is not force-overridden by scripts; upstream defaults apply unless you set `RAG_EMBEDDING_ENGINE` explicitly.
 
 #### 3) Verify no-auth + Ollama wiring
 
@@ -115,6 +116,7 @@ Expected:
 - WebUI cannot reach Ollama in Docker: use `OLLAMA_BASE_URL=http://host.docker.internal:11434` and ensure host Ollama is listening.
 - Native startup too heavy: keep `OWUI_BACKEND_PROFILE=light` and `OWUI_TORCH_FLAVOR=cpu`.
 - Native install fails with `mariadb_config not found`: leave `OWUI_INCLUDE_MARIADB=0` (default), or install MariaDB Connector/C and set `OWUI_INCLUDE_MARIADB=1`.
+- If you explicitly use `RAG_EMBEDDING_ENGINE=ollama`, ensure an embedding-capable Ollama model is configured; chat-only models can cause empty embedding results during knowledge indexing.
 
 If you want MariaDB support (`OWUI_INCLUDE_MARIADB=1`), install Connector/C first so `mariadb_config` exists:
 

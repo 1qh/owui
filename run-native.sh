@@ -136,10 +136,6 @@ export OLLAMA_BASE_URL="${OLLAMA_BASE_URL:-http://localhost:11434}"
 export DATA_DIR="${SRC_DIR}/backend/data"
 mkdir -p "${DATA_DIR}"
 
-if [[ "$BACKEND_PROFILE" == "light" ]]; then
-    export RAG_EMBEDDING_ENGINE="${RAG_EMBEDDING_ENGINE:-ollama}"
-fi
-
 python -m uvicorn "${MODULE}.main:app" \
     --host 0.0.0.0 \
     --port "${HOST_PORT}" \

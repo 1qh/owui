@@ -89,7 +89,6 @@ docker run -d \
     -e DEFAULT_USER_ROLE=admin \
     -e ENABLE_COMMUNITY_SHARING=False \
     -e ENABLE_MESSAGE_RATING=False \
-    -e RAG_EMBEDDING_ENGINE=${RAG_EMBEDDING_ENGINE:-ollama} \
     --add-host=host.docker.internal:host-gateway \
     -e OLLAMA_BASE_URL=${OLLAMA_ENDPOINT} \
     --restart unless-stopped \
